@@ -730,9 +730,7 @@ class UI(object):
             logging.info('shut down cleanly')
             self.apply_command(globals.ExitCommand())
         elif signum == signal.SIGUSR1:
-            if isinstance(self.current_buffer, SearchBuffer):
-                self.current_buffer.rebuild()
-                self.update()
+            self.apply_command(globals.RefreshCommand())
 
     def cleanup(self):
         """Do the final clean up before shutting down."""
