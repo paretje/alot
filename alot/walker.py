@@ -1,30 +1,20 @@
 # Copyright (C) 2011-2012  Patrick Totzke <patricktotzke@gmail.com>
-# Copyright © 2018 Dylan Baker
 # This file is released under the GNU GPL, version 3 or a later revision.
 # For further details see the COPYING file
 import logging
 import urwid
 
 
-class IterableWalker(urwid.ListWalker):
+class PipeWalker(urwid.ListWalker):
+    """urwid.ListWalker that reads next items from a pipe and wraps them in
+    `containerclass` widgets for displaying
 
-    """An urwid walker for iterables.
-
-    Works like ListWalker, except it takes an iterable object instead of a
-    concrete type. This allows for lazy operations of very large sequences of
-    data, such as a sequences of threads with certain notmuch tags.
-
-    :param iterable: An iterator of objects to walk over
-    :type iterable: Iterable[T]
-    :param containerclass: An urwid widget to wrap each object in
-    :type containerclass: urwid.Widget
-    :param reverse: Reverse the order of the iterable
-    :type reverse: bool
-    :param **kwargs: Forwarded to container class.
+    Attributes that should be considered publicly readable:
+        :attr lines: the lines obtained from the pipe
+        :type lines: list(`containerclass`)
     """
-
-    def __init__(self, iterable, containerclass, reverse=False, **kwargs):
-        self.iterable = iterable
+    def __init__(self, pipe, containerclass, reverse=False, **kwargs):
+        self.pipe = pipe
         self.kwargs = kwargs
         self.containerclass = containerclass
         self.lines = []
@@ -81,10 +71,10 @@ class IterableWalker(urwid.ListWalker):
         try:
             # the next line blocks until it can read from the pipe or
             # EOFError is raised. No races here.
-            next_obj = next(self.iterable)
+            next_obj = self.pipe.recv()
             next_widget = self.containerclass(next_obj, **self.kwargs)
             self.lines.append(next_widget)
-        except StopIteration:
+        except EOFError:
             logging.debug('EMPTY PIPE')
             next_widget = None
             self.empty = True
